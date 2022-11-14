@@ -7,10 +7,10 @@ import {
   RawSigner,
 } from "@mysten/sui.js";
 import { useEffect, useState } from "react";
+const ownerAddress = "0xaf739817f371f4ceff7f8217e7978258eddfce7e";
 const provider = new JsonRpcProvider(Network.DEVNET);
 const keypair = new Ed25519Keypair();
 const signer = new RawSigner(keypair, provider);
-const ownerAddress = "0xaf739817f371f4ceff7f8217e7978258eddfce7e";
 
 function App() {
   const [adminObj, setAdminObj] = useState();
@@ -32,7 +32,7 @@ function App() {
           event.type.includes("Forge") &&
           event.owner.AddressOwner === ownerAddress
         ) {
-          forgeId = event;
+          forgeId = event.objectId;
           const arr = event.type.split(":");
           objectId = arr[0];
         }
@@ -43,7 +43,7 @@ function App() {
         forger.details.data.dataType === "package" &&
         forger.details.owner === "Immutable"
       ) {
-        setForger({ packageId: objectId, forgeId: packageId });
+        setForger({ packageId: objectId, forgeId: forgeId });
       }
     }
   };
@@ -51,14 +51,21 @@ function App() {
   const forgeSwordToAddress = async (recipient, objectId) => {
     console.log("call func forge sworld", forger);
     if (forger) {
-      const callSend = await signer.executeMoveCall({
-        packageObjectId: forger.details.reference.objectId,
+      console.log("address generated: ", signer.getAddress());
+      const moveCallTxn = await signer.executeMoveCall({
+        packageObjectId: forger.packageId,
         module: "my_module",
         function: "sword_create",
         typeArguments: [],
-        arguments: ["", 42, 7, "0xe4d7b592d8c6afadb480979b7ae4739e66648436"],
-        gasBudget: 10000,
+        arguments: [
+          forger.forgeId, //Forge Object id
+          42, //magic att
+          7, //strength att
+          "0xe4d7b592d8c6afadb480979b7ae4739e66648436", //recipient Address
+        ],
+        gasBudget: 3000,
       });
+      console.log("moveCallTxn : ", moveCallTxn);
     }
   };
 
